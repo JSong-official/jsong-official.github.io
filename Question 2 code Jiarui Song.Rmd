@@ -1,0 +1,496 @@
+---
+title: "Question 2 code - Jiarui Song"
+date: "2023-04-07"
+output: html_document
+---
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+# library packages
+library(haven)
+library(magrittr)
+library(tsibble)
+library(feasts)
+library(tidyverse)
+library(car)
+library(readxl)
+library(gridExtra)
+library(tsDyn)
+
+# import dataset
+data1 <- read_dta("dataA.dta")
+data2 <- read_dta("dataB.dta")
+data3 <- read_dta("dataC.dta")
+datafull <- read_dta("datafull.dta")
+```
+
+# 1957-1973
+
+```{r, warning=FALSE}
+# data with no NAs
+data11<- drop_na(data1[,c(3,5)])
+
+# estimate a VAR(12)
+var1 <- lineVar(data11,lag=12)
+
+# empty vector for forecasts
+  p1 <- vector(length = 0)
+  p6 <- vector(length = 0)
+  p12 <- vector(length = 0)
+  p24 <- vector(length = 0)
+  p1u <- vector(length = 0)
+  p6u <- vector(length = 0)
+  p12u <- vector(length = 0)
+  p24u <- vector(length = 0)
+
+# forecasts
+for (x in 50:203){
+  pred1 <- predict(var1,newdata = data11[(x-11):x,], n.ahead = 24)
+  p1[x] <- pred1[1,2]
+  p6[x] <- sum(pred1[1:6,2])
+  p12[x] <- sum(pred1[1:12,2])
+  p24[x] <- sum(pred1[1:24,2])
+  p1u[x] <- pred1[1,1]
+  p6u[x] <- pred1[6,1]
+  p12u[x] <- pred1[12,1]
+  p24u[x] <- pred1[24,1]
+}
+
+# convert month forecasts to month-ahead forecasts
+data1_pred <- datafull
+data1_pred$in6 <- NA
+data1_pred$in12 <- NA
+data1_pred$in24 <- NA
+for (x in 51:769){
+  data1_pred$in6[x+6] <- sum(data1_pred$inflation[x:(x+6)])
+  data1_pred$in12[x+12] <- sum(data1_pred$inflation[x:(x+12)])
+  data1_pred$in24[x+24] <- sum(data1_pred$inflation[x:(x+24)])
+}
+data1_pred$p1 <- NA
+data1_pred$p1[52:205] <- p1[50:203]
+data1_pred$p1u <- NA
+data1_pred$p1u[52:205] <- p1u[50:203]
+data1_pred1 <- drop_na(data1_pred)
+
+# calculate root mean squared errors for 1-month ahead forecasts
+rmse_i1 <- sqrt(mean((data1_pred1$inflation-data1_pred1$p1)^2))*100
+rmse_u1 <- sqrt(mean((data1_pred1$UR-data1_pred1$p1u)^2))
+
+# convert month forecasts to month-ahead forecasts
+data1_pred <- datafull
+data1_pred$in6 <- NA
+data1_pred$in12 <- NA
+data1_pred$in24 <- NA
+for (x in 51:769){
+  data1_pred$in6[x+6] <- sum(data1_pred$inflation[x:(x+6)])
+  data1_pred$in12[x+12] <- sum(data1_pred$inflation[x:(x+12)])
+  data1_pred$in24[x+24] <- sum(data1_pred$inflation[x:(x+24)])
+}
+data1_pred$p6 <- NA
+data1_pred$p6[57:210] <- p6[50:203]
+data1_pred$p6u <- NA
+data1_pred$p6u[57:210] <- p6u[50:203]
+data1_pred6 <- drop_na(data1_pred)
+
+# calculate root mean squared errors for 6-month ahead forecasts
+rmse_i6 <- sqrt(mean((data1_pred6$in6-data1_pred6$p6)^2))*100
+rmse_u6 <- sqrt(mean((data1_pred6$UR-data1_pred6$p6u)^2))
+
+# convert month forecasts to month-ahead forecasts
+data1_pred <- datafull
+data1_pred$in6 <- NA
+data1_pred$in12 <- NA
+data1_pred$in24 <- NA
+for (x in 51:769){
+  data1_pred$in6[x+6] <- sum(data1_pred$inflation[x:(x+6)])
+  data1_pred$in12[x+12] <- sum(data1_pred$inflation[x:(x+12)])
+  data1_pred$in24[x+24] <- sum(data1_pred$inflation[x:(x+24)])
+}
+data1_pred$p12 <- NA
+data1_pred$p12[63:216] <- p12[50:203]
+data1_pred$p12u <- NA
+data1_pred$p12u[63:216] <- p12u[50:203]
+data1_pred12 <- drop_na(data1_pred)
+
+# calculate root mean squared errors for 12-month ahead forecasts
+rmse_i12 <- sqrt(mean((data1_pred12$in12-data1_pred12$p12)^2))*100
+rmse_u12 <- sqrt(mean((data1_pred12$UR-data1_pred12$p12u)^2))
+
+# convert month forecasts to month-ahead forecasts
+data1_pred <- datafull
+data1_pred$in6 <- NA
+data1_pred$in12 <- NA
+data1_pred$in24 <- NA
+for (x in 51:769){
+  data1_pred$in6[x+6] <- sum(data1_pred$inflation[x:(x+6)])
+  data1_pred$in12[x+12] <- sum(data1_pred$inflation[x:(x+12)])
+  data1_pred$in24[x+24] <- sum(data1_pred$inflation[x:(x+24)])
+}
+data1_pred$p24 <- NA
+data1_pred$p24[76:229] <- p24[50:203]
+data1_pred$p24u <- NA
+data1_pred$p24u[76:229] <- p24u[50:203]
+data1_pred24 <- drop_na(data1_pred)
+
+# calculate root mean squared errors for 24-month ahead forecasts
+rmse_i24 <- sqrt(mean((data1_pred24$in24*100-data1_pred24$p24*100)^2))
+rmse_u24 <- sqrt(mean((data1_pred24$UR-data1_pred24$p24u)^2))
+
+# convert month-ahead forecasts into one data frame
+data1_pred <- datafull
+data1_pred$in6 <- NA
+data1_pred$in12 <- NA
+data1_pred$in24 <- NA
+for (x in 51:769){
+  data1_pred$in6[x+6] <- sum(data1_pred$inflation[x:(x+6)])
+  data1_pred$in12[x+12] <- sum(data1_pred$inflation[x:(x+12)])
+  data1_pred$in24[x+24] <- sum(data1_pred$inflation[x:(x+24)])
+}
+data1_pred$p1 <- NA
+data1_pred$p1[52:205] <- p1[50:203]
+data1_pred$p1u <- NA
+data1_pred$p1u[52:205] <- p1u[50:203]
+data1_pred$p6 <- NA
+data1_pred$p6[57:210] <- p6[50:203]
+data1_pred$p6u <- NA
+data1_pred$p6u[57:210] <- p6u[50:203]
+data1_pred$p12 <- NA
+data1_pred$p12[63:216] <- p12[50:203]
+data1_pred$p12u <- NA
+data1_pred$p12u[63:216] <- p12u[50:203]
+data1_pred$p24 <- NA
+data1_pred$p24[75:228] <- p24[50:203]
+data1_pred$p24u <- NA
+data1_pred$p24u[75:228] <- p24u[50:203]
+
+# plot 1-month-ahead and 6-month-ahead inflation forecasts
+ggplot(data=data1_pred, aes(x=time, y=inflation)) +
+  ylim(-0.01,0.07) +
+  xlim(14,172) +
+  geom_line(aes(x=time,y=inflation, color="1-month inflation")) +
+  geom_line(aes(x=time,y=p1, color="1-month prediction")) +
+  geom_line(aes(x=time,y=in6, color="6-month inflation")) +
+  geom_line(aes(x=time,y=p6, color="6-month prediction")) +
+  labs(title = "Prediction of Inflation (1957-1973)", x = "Time", y = "Inflation", color = "Series")
+
+# plot 1-month-ahead and 6-month-ahead unemployment forecasts
+ggplot(data=data1_pred, aes(x=time, y=UR)) +
+  ylim(2.5,7.5) +
+  xlim(14,172) +
+  geom_line(aes(x=time,y=UR, color="Unemoloyment")) +
+  geom_line(aes(x=time,y=p1u, color="1-month prediction")) +
+  geom_line(aes(x=time,y=p6u, color="6-month prediction")) +
+  labs(title = "Prediction of Unemployment (1957-1973)", x = "Time", y = "Unemployment", color = "Series")
+```
+
+# 1974-1994
+
+```{r, warning=FALSE}
+# the structure of this code chunk is very similar to the last one
+data22<- drop_na(data2[,c(3,5)])
+var2 <- lineVar(data22,lag=12)
+
+  pp1 <- vector(length = 0)
+  pp6 <- vector(length = 0)
+  pp12 <- vector(length = 0)
+  pp24 <- vector(length = 0)
+  pp1u <- vector(length = 0)
+  pp6u <- vector(length = 0)
+  pp12u <- vector(length = 0)
+  pp24u <- vector(length = 0)
+
+for (x in 50:252){
+  pred2 <- predict(var2, newdata = data22[(x-11):x,], n.ahead = 24)
+  pp1[x] <- pred2[1,2]
+  pp6[x] <- sum(pred2[1:6,2])
+  pp12[x] <- sum(pred2[1:12,2])
+  pp24[x] <- sum(pred2[1:24,2])
+  pp1u[x] <- pred2[1,1]
+  pp6u[x] <- pred2[6,1]
+  pp12u[x] <- pred2[12,1]
+  pp24u[x] <- pred2[24,1]
+}
+
+data2_pred <- datafull
+data2_pred$in6 <- NA
+data2_pred$in12 <- NA
+data2_pred$in24 <- NA
+for (x in 51:769){
+  data2_pred$in6[x+6] <- sum(data2_pred$inflation[x:(x+6)])
+  data2_pred$in12[x+12] <- sum(data2_pred$inflation[x:(x+12)])
+  data2_pred$in24[x+24] <- sum(data2_pred$inflation[x:(x+24)])
+}
+data2_pred$p1 <- NA
+data2_pred$p1[255:457] <- pp1[50:252]
+data2_pred$p1u <- NA
+data2_pred$p1u[255:457] <- pp1u[50:252]
+data2_pred1 <- drop_na(data2_pred)
+rmse_2i1 <- sqrt(mean((data2_pred1$inflation*100-data2_pred1$p1*100)^2))
+rmse_2u1 <- sqrt(mean((data2_pred1$UR-data2_pred1$p1u)^2))
+
+data2_pred <- datafull
+data2_pred$in6 <- NA
+data2_pred$in12 <- NA
+data2_pred$in24 <- NA
+for (x in 51:769){
+  data2_pred$in6[x+6] <- sum(data2_pred$inflation[x:(x+6)])
+  data2_pred$in12[x+12] <- sum(data2_pred$inflation[x:(x+12)])
+  data2_pred$in24[x+24] <- sum(data2_pred$inflation[x:(x+24)])
+}
+data2_pred$p6 <- NA
+data2_pred$p6[260:462] <- pp6[50:252]
+data2_pred$p6u <- NA
+data2_pred$p6u[260:462] <- pp6u[50:252]
+data2_pred6 <- drop_na(data2_pred)
+rmse_2i6 <- sqrt(mean((data2_pred6$in6*100-data2_pred6$p6*100)^2))
+rmse_2u6 <- sqrt(mean((data2_pred6$UR-data2_pred6$p6u)^2))
+
+data2_pred <- datafull
+data2_pred$in6 <- NA
+data2_pred$in12 <- NA
+data2_pred$in24 <- NA
+for (x in 51:769){
+  data2_pred$in6[x+6] <- sum(data2_pred$inflation[x:(x+6)])
+  data2_pred$in12[x+12] <- sum(data2_pred$inflation[x:(x+12)])
+  data2_pred$in24[x+24] <- sum(data2_pred$inflation[x:(x+24)])
+}
+data2_pred$p12 <- NA
+data2_pred$p12[266:468] <- pp12[50:252]
+data2_pred$p12u <- NA
+data2_pred$p12u[266:468] <- pp12u[50:252]
+data2_pred12 <- drop_na(data2_pred)
+rmse_2i12 <- sqrt(mean((data2_pred12$in12-data2_pred12$p12)^2))*100
+rmse_2u12 <- sqrt(mean((data2_pred12$UR-data2_pred12$p12u)^2))
+
+data2_pred <- datafull
+data2_pred$in6 <- NA
+data2_pred$in12 <- NA
+data2_pred$in24 <- NA
+for (x in 51:769){
+  data2_pred$in6[x+6] <- sum(data2_pred$inflation[x:(x+6)])
+  data2_pred$in12[x+12] <- sum(data2_pred$inflation[x:(x+12)])
+  data2_pred$in24[x+24] <- sum(data2_pred$inflation[x:(x+24)])
+}
+data2_pred$p24 <- NA
+data2_pred$p24[278:480] <- pp24[50:252]
+data2_pred$p24u <- NA
+data2_pred$p24u[278:480] <- pp24u[50:252]
+data2_pred24 <- drop_na(data2_pred)
+rmse_2i24 <- sqrt(mean((data2_pred24$in24-data2_pred24$p24)^2))*100
+rmse_2u24 <- sqrt(sum((data2_pred24$UR-data2_pred24$p24u)^2)/203)
+
+data2_pred <- datafull
+data2_pred$in6 <- NA
+data2_pred$in12 <- NA
+data2_pred$in24 <- NA
+for (x in 51:769){
+  data2_pred$in6[x+6] <- sum(data2_pred$inflation[x:(x+6)])
+  data2_pred$in12[x+12] <- sum(data2_pred$inflation[x:(x+12)])
+  data2_pred$in24[x+24] <- sum(data2_pred$inflation[x:(x+24)])
+}
+data2_pred$p1 <- NA
+data2_pred$p1[255:457] <- pp1[50:252]
+data2_pred$p1u <- NA
+data2_pred$p1u[255:457] <- pp1u[50:252]
+data2_pred$p6 <- NA
+data2_pred$p6[260:462] <- pp6[50:252]
+data2_pred$p6u <- NA
+data2_pred$p6u[260:462] <- pp6u[50:252]
+data2_pred$p12 <- NA
+data2_pred$p12[266:468] <- pp12[50:252]
+data2_pred$p12u <- NA
+data2_pred$p12u[266:468] <- pp12u[50:252]
+data2_pred$p24 <- NA
+data2_pred$p24[278:480] <- pp24[50:252]
+data2_pred$p24u <- NA
+data2_pred$p24u[278:480] <- pp24u[50:252]
+
+ggplot(data=data2_pred, aes(x=time, y=inflation)) +
+  ylim(-0.01,0.09) +
+  xlim(218,425) +
+  geom_line(aes(x=time,y=inflation, color="1-month inflation")) +
+  geom_line(aes(x=time,y=p1, color="1-month prediction")) +
+  geom_line(aes(x=time,y=in6, color="6-month inflation")) +
+  geom_line(aes(x=time,y=p6, color="6-month prediction")) +
+  labs(title = "Prediction of Inflation (1974-1994)", x = "Time", y = "Inflation", color = "Series")
+
+ggplot(data=data2_pred, aes(x=time, y=UR)) +
+  ylim(5,11) +
+  xlim(218,425) +
+  geom_line(aes(x=time,y=UR, color="Unemoloyment")) +
+  geom_line(aes(x=time,y=p1u, color="1-month prediction")) +
+  geom_line(aes(x=time,y=p6u, color="6-month prediction")) +
+  labs(title = "Prediction of Unemployment (1974-1994)", x = "Time", y = "Unemployment", color = "Series")
+```
+
+# 1985-2019
+
+```{r, warning=FALSE}
+# the structure of this code chunk is very similar to the last one
+data33<- drop_na(data3[,c(3,5)])
+var3 <- lineVar(data33,lag=12)
+
+  ppp1 <- vector(length = 0)
+  ppp6 <- vector(length = 0)
+  ppp12 <- vector(length = 0)
+  ppp24 <- vector(length = 0)
+  ppp1u <- vector(length = 0)
+  ppp6u <- vector(length = 0)
+  ppp12u <- vector(length = 0)
+  ppp24u <- vector(length = 0)
+  
+for (x in 50:300){
+  pred3 <- predict(var3,newdata = data33[(x-11):x,], n.ahead = 24)
+  ppp1[x] <- pred3[1,2]
+  ppp6[x] <- sum(pred3[1:6,2])
+  ppp12[x] <- sum(pred3[1:12,2])
+  ppp24[x] <- sum(pred3[1:24,2])
+  ppp1u[x] <- pred3[1,1]
+  ppp6u[x] <- pred3[6,1]
+  ppp12u[x] <- pred3[12,1]
+  ppp24u[x] <- pred3[24,1]
+}
+
+data3_pred <- datafull
+data3_pred$in6 <- NA
+data3_pred$in12 <- NA
+data3_pred$in24 <- NA
+for (x in 51:769){
+  data3_pred$in6[x+6] <- sum(data3_pred$inflation[x:(x+6)])
+  data3_pred$in12[x+12] <- sum(data3_pred$inflation[x:(x+12)])
+  data3_pred$in24[x+24] <- sum(data3_pred$inflation[x:(x+24)])
+}
+data3_pred$p1 <- NA
+data3_pred$p1[507:757] <- ppp1[50:300]
+data3_pred$p1u <- NA
+data3_pred$p1u[507:757] <- ppp1u[50:300]
+data3_pred1 <- drop_na(data3_pred)
+rmse_3i1 <- sqrt(mean((data3_pred1$inflation*100-data3_pred1$p1*100)^2))
+rmse_3u1 <- sqrt(mean((data3_pred1$UR-data3_pred1$p1u)^2))
+
+data3_pred <- datafull
+data3_pred$in6 <- NA
+data3_pred$in12 <- NA
+data3_pred$in24 <- NA
+for (x in 51:769){
+  data3_pred$in6[x+6] <- sum(data3_pred$inflation[x:(x+6)])
+  data3_pred$in12[x+12] <- sum(data3_pred$inflation[x:(x+12)])
+  data3_pred$in24[x+24] <- sum(data3_pred$inflation[x:(x+24)])
+}
+data3_pred$p6 <- NA
+data3_pred$p6[513:763] <- ppp6[50:300]
+data3_pred$p6u <- NA
+data3_pred$p6u[513:763] <- ppp6u[50:300]
+data3_pred6 <- drop_na(data3_pred)
+rmse_3i6 <- sqrt(mean((data3_pred6$in6*100-data3_pred6$p6*100)^2))
+rmse_3u6 <- sqrt(mean((data3_pred6$UR-data3_pred6$p6u)^2))
+
+data3_pred <- datafull
+data3_pred$in6 <- NA
+data3_pred$in12 <- NA
+data3_pred$in24 <- NA
+for (x in 51:769){
+  data3_pred$in6[x+6] <- sum(data3_pred$inflation[x:(x+6)])
+  data3_pred$in12[x+12] <- sum(data3_pred$inflation[x:(x+12)])
+  data3_pred$in24[x+24] <- sum(data3_pred$inflation[x:(x+24)])
+}
+data3_pred$p12 <- NA
+data3_pred$p12[519:769] <- ppp12[50:300]
+data3_pred$p12u <- NA
+data3_pred$p12u[519:769] <- ppp12u[50:300]
+data3_pred12 <- drop_na(data3_pred)
+rmse_3i12 <- sqrt(mean((data3_pred12$in12-data3_pred12$p12)^2))*100
+rmse_3u12 <- sqrt(mean((data3_pred12$UR-data3_pred12$p12u)^2))
+
+data3_pred <- datafull
+data3_pred$in6 <- NA
+data3_pred$in12 <- NA
+data3_pred$in24 <- NA
+for (x in 51:769){
+  data3_pred$in6[x+6] <- sum(data3_pred$inflation[x:(x+6)])
+  data3_pred$in12[x+12] <- sum(data3_pred$inflation[x:(x+12)])
+  data3_pred$in24[x+24] <- sum(data3_pred$inflation[x:(x+24)])
+}
+data3_pred$p24 <- NA
+data3_pred$p24[531:781] <- ppp24[50:300]
+data3_pred$p24u <- NA
+data3_pred$p24u[531:781] <- ppp24u[50:300]
+data3_pred24 <- drop_na(data3_pred)
+rmse_3i24 <- sqrt(mean((data3_pred24$in24-data3_pred24$p24)^2))*100
+rmse_3u24 <- sqrt(mean((data3_pred24$UR-data3_pred24$p24u)^2))
+
+data3_pred <- datafull
+data3_pred$in6 <- NA
+data3_pred$in12 <- NA
+data3_pred$in24 <- NA
+for (x in 51:769){
+  data3_pred$in6[x+6] <- sum(data3_pred$inflation[x:(x+6)])
+  data3_pred$in12[x+12] <- sum(data3_pred$inflation[x:(x+12)])
+  data3_pred$in24[x+24] <- sum(data3_pred$inflation[x:(x+24)])
+}
+data3_pred$p1 <- NA
+data3_pred$p1[507:757] <- ppp1[50:300]
+data3_pred$p1u <- NA
+data3_pred$p1u[507:757] <- ppp1u[50:300]
+data3_pred$p6 <- NA
+data3_pred$p6[513:763] <- ppp6[50:300]
+data3_pred$p6u <- NA
+data3_pred$p6u[513:763] <- ppp6u[50:300]
+data3_pred$p12 <- NA
+data3_pred$p12[519:769] <- ppp12[50:300]
+data3_pred$p12u <- NA
+data3_pred$p12u[519:769] <- ppp12u[50:300]
+data3_pred$p24 <- NA
+data3_pred$p24[531:781] <- ppp24[50:300]
+data3_pred$p24u <- NA
+data3_pred$p24u[531:781] <- ppp24u[50:300]
+
+ggplot(data=data3_pred, aes(x=time, y=inflation)) +
+  ylim(-0.03,0.04) +
+  xlim(507,676) +
+  geom_line(aes(x=time,y=inflation, color="1-month inflation")) +
+  geom_line(aes(x=time,y=p1, color="1-month prediction")) +
+  geom_line(aes(x=time,y=in6, color="6-month inflation")) +
+  geom_line(aes(x=time,y=p6, color="6-month prediction")) +
+  labs(title = "Prediction of Inflation (1995-2019)", x = "Time", y = "Inflation", color = "Series")
+
+ggplot(data=data3_pred, aes(x=time, y=UR)) +
+  ylim(4,11) +
+  xlim(507,676) +
+  geom_line(aes(x=time,y=UR, color="Unemoloyment")) +
+  geom_line(aes(x=time,y=p1u, color="1-month prediction")) +
+  geom_line(aes(x=time,y=p6u, color="6-month prediction")) +
+  labs(title = "Prediction of Unemployment (1995-2019)", x = "Time", y = "Unemployment", color = "Series")
+```
+
+```{r}
+# display rmse for 1st period inflation
+rmse_i1
+rmse_i6
+rmse_i12
+rmse_i24
+# display rmse for 1st period unemployment
+rmse_u1
+rmse_u6
+rmse_u12
+rmse_u24
+# display rmse for 2nd period inflation
+rmse_2i1
+rmse_2i6
+rmse_2i12
+rmse_2i24
+# display rmse for 2nd period unemployment
+rmse_2u1
+rmse_2u6
+rmse_2u12
+rmse_2u24
+# display rmse for 3rd period inflation
+rmse_3i1
+rmse_3i6
+rmse_3i12
+rmse_3i24
+# display rmse for 3rd period unemployment
+rmse_3u1
+rmse_3u6
+rmse_3u12
+rmse_3u24
+```
